@@ -1,0 +1,10 @@
+name: iam
+description: Manage IAM Policies and Roles
+runtime:
+  name: nodejs
+  options:
+    packagemanager: npm
+config:
+  pulumi:tags:
+    value:
+      pulumi:template: aws-typescript

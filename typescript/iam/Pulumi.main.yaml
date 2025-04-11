@@ -1,0 +1,16 @@
+config:
+  aws:profile: my-profile
+  aws:region: us-east-1
+  iam:policies:
+    delete-this-policy1:
+      Version: "2012-10-17"
+      Statement:
+        - Action: ["s3:ListBucket"]
+          Effect: "Allow"
+          Resource: "*"
+    delete-this-policy2:
+      Version: "2012-10-17"
+      Statement:
+        - Action: ["ec2:DescribeInstances"]
+          Effect: "Allow"
+          Resource: "*"
