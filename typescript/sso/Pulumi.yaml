@@ -1,0 +1,10 @@
+name: sso
+description: IAM Identity Center permission and account assignment config
+runtime:
+  name: nodejs
+  options:
+    packagemanager: npm
+config:
+  pulumi:tags:
+    value:
+      pulumi:template: aws-typescript

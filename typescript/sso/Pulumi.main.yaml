@@ -1,0 +1,37 @@
+config:
+  aws:profile: my-profile
+  aws:region: us-east-1
+  sso:accounts:
+    main: '123456789001'
+    prod: '123456789002'
+    dev: '123456789003'
+  sso:permission-sets:
+    # ExamplePermissionSet:
+    #   description: 'Example permission set'
+    #   sessionDuration: PT4H
+    #   awsPolicies:
+    #     - AWS-Managed-Policy-Name
+    #   customerPolicies:
+    #     - deny-billing-access
+    Admin:
+      sessionDuration: PT12H
+      awsPolicies:
+        - AdministratorAccess
+      accountAssignments:
+        CloudAdmin:
+          - main
+          - prod
+          - dev
+  sso:inline-policies:
+    Admin:
+      Version: '2012-10-17'
+      Statement:
+      - Sid: DenyBilling
+        Action:
+        - aws-portal:*
+        - ce:*
+        - budgets:*
+        - pricing:*
+        - cur:*
+        Effect: Deny
+        Resource: "*"
