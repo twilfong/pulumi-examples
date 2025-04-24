@@ -8,30 +8,40 @@ config:
   sso:permission-sets:
     # ExamplePermissionSet:
     #   description: 'Example permission set'
-    #   sessionDuration: PT4H
+    #   sessionDuration: PT8H
     #   awsPolicies:
     #     - AWS-Managed-Policy-Name
     #   customerPolicies:
     #     - deny-billing-access
     Admin:
-      sessionDuration: PT12H
+      sessionDuration: PT4H
       awsPolicies:
         - AdministratorAccess
+      inlinePolicyStatements:
+        - DenyS3NoSSL
       accountAssignments:
         CloudAdmin:
           - main
           - prod
           - dev
-  sso:inline-policies:
-    Admin:
-      Version: '2012-10-17'
-      Statement:
-      - Sid: DenyBilling
-        Action:
-        - aws-portal:*
-        - ce:*
-        - budgets:*
-        - pricing:*
-        - cur:*
-        Effect: Deny
-        Resource: "*"
+  sso:policy-statements:
+    DenyEcrAccess:
+      Action: ecr:*
+      Effect: Deny
+      Resource: "*"
+    DenyS3NoSSL:
+      Action: s3:*
+      Effect: Deny
+      Resource: "*"
+      Condition:
+        Bool:
+          aws:SecureTransport: 'false'
+    DenyBillingAccess:
+      Action:
+      - aws-portal:*
+      - ce:*
+      - budgets:*
+      - pricing:*
+      - cur:*
+      Effect: Deny
+      Resource: "*"

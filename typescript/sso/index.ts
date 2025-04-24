@@ -9,6 +9,7 @@ interface PermissionSet {
   sessionDuration?: string;
   awsPolicies?: string[];
   customerPolicies?: string[];
+  inlinePolicyStatements?: string[];
   accountAssignments: AccountAssignments;
 }
 interface PermisionSets {
@@ -17,13 +18,12 @@ interface PermisionSets {
 interface AccountAssignments {
   [group: string]: [string];
 }
-// interface Policies {
-//   [name: string]: object;
-// }
-
-// load account name to id mapping and policy docs from stack configuration
+interface Statements {
+  [name: string]: object;
+}
+// load account name to id mapping and plicy docs from the stack configuration
 const accountIds = config.requireObject<Record<string, string>>('accounts');
-// const policyDocuments = config.requireObject<Policies>('inline-policies');
+const policyStatements = config.requireObject<Statements>('policy-statements');
 
 // Get the AWS SSO instance ARN and identity store ID
 const ssoInstances = aws.ssoadmin.getInstances({});
@@ -57,7 +57,13 @@ const permissionSets = config.requireObject<PermisionSets>('permission-sets');
 export const psArns: { [name: string]: pulumi.Output<string> } = {};
 for (const [psName, ps] of Object.entries(permissionSets)) {
   // Create permission set first
-  const { awsPolicies, customerPolicies, ...obj } = {
+  const {
+    awsPolicies,
+    customerPolicies,
+    accountAssignments,
+    inlinePolicyStatements,
+    ...obj
+  } = {
     name: psName,
     instanceArn: instanceArn,
     ...ps,
@@ -67,7 +73,7 @@ for (const [psName, ps] of Object.entries(permissionSets)) {
 
   // Now create account assignments
   const assignments: aws.ssoadmin.AccountAssignment[] = [];
-  for (const [group, accounts] of Object.entries(ps.accountAssignments)) {
+  for (const [group, accounts] of Object.entries(accountAssignments)) {
     // Get the group ID from the group name and create the list of assignments
     // Note that if the number of expected groups is large, we should do a
     // single getGroups call above this to retrieve all group IDs instead
@@ -126,5 +132,24 @@ for (const [psName, ps] of Object.entries(permissionSets)) {
         { dependsOn: assignments }, // policy attached after assignments
       );
     }
+  }
+  // Build and attach inline policy to permission set
+  if (inlinePolicyStatements) {
+    const doc = {
+      Version: '2012-10-17',
+      Statement: [] as object[],
+    };
+    inlinePolicyStatements.forEach((s) => {
+      if (policyStatements[s]) {
+        doc.Statement.push({ Sid: s, ...policyStatements[s] });
+      } else {
+        console.warn(`Statement "${s}" not found in 'policy-statements'.`);
+      }
+    });
+    new aws.ssoadmin.PermissionSetInlinePolicy(`${psName}-inline-policy`, {
+      instanceArn: instanceArn,
+      permissionSetArn: pSet.arn,
+      inlinePolicy: JSON.stringify(doc),
+    });
   }
 }
